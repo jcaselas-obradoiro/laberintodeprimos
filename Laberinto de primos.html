@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Laberinto de primos</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&display=swap">
+<style>
+:root{--bg:#eaf1fb;--card:#fbfdff;--ink:#1c2a55;--mute:#5b6b92;--line:#aebfe0;--acc:#2a4bd7;--acc-ink:#fff;--ok:#12805a;--bad:#d8363f;--gold:#c98a00;--path:#ffe66b;--path-ink:#1c2a55;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1630;--card:#17224a;--ink:#e9eeff;--mute:#9eb0e0;--line:#33447e;--acc:#8fb0ff;--acc-ink:#0e1630;--ok:#4fd6a0;--bad:#ff7b84;--gold:#ffcf5c;--path:#6e5a12;--path-ink:#fff6d0}}
+:root[data-theme="dark"]{--bg:#0e1630;--card:#17224a;--ink:#e9eeff;--mute:#9eb0e0;--line:#33447e;--acc:#8fb0ff;--acc-ink:#0e1630;--ok:#4fd6a0;--bad:#ff7b84;--gold:#ffcf5c;--path:#6e5a12;--path-ink:#fff6d0}
+*{box-sizing:border-box}
+html,body{margin:0;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;overscroll-behavior-y:contain}
+body{background-color:var(--bg);background-image:linear-gradient(color-mix(in srgb,var(--line) 45%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--line) 45%,transparent) 1px,transparent 1px);background-size:26px 26px;color:var(--ink);font-family:Fredoka,"Trebuchet MS",system-ui,sans-serif;min-height:100vh}
+main{max-width:760px;margin:0 auto;padding:12px 12px 28px;text-align:center}
+h1{font-size:clamp(1.6rem,6vw,2.2rem);margin:2px 0;font-weight:700}
+.intro{margin:0 auto 8px;max-width:48ch;color:var(--mute);line-height:1.35}
+button,select,input{font-family:inherit;color:var(--ink)}
+select,input{font-size:1rem;min-height:40px;background:var(--card);border:2px solid var(--line);border-radius:8px;padding:3px 6px}
+input{width:64px}
+.row{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;margin:6px 0;font-weight:700}
+.lv button{background:var(--card);border:2px solid var(--line);border-radius:10px;padding:4px 9px;min-height:44px;font-size:.95rem;font-weight:700;cursor:pointer;line-height:1.1;touch-action:manipulation}
+.lv button small{display:block;font-weight:500;color:var(--mute);font-size:.68rem}
+.lv button:disabled{opacity:.5;cursor:not-allowed}
+.lv button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:var(--acc-ink)}
+.lv button[aria-pressed="true"] small{color:var(--acc-ink)}
+.row span{background:var(--card);border:2px solid var(--line);border-radius:10px;padding:3px 10px;min-width:92px}
+.act{background:var(--card);border:2px solid var(--ink);border-radius:10px;padding:5px 12px;min-height:44px;font-size:.95rem;font-weight:700;cursor:pointer;touch-action:manipulation}
+.act:disabled{opacity:.45}
+.board{--w:min(96vw,60vh,720px);width:var(--w);height:var(--w);display:grid;grid-template-columns:repeat(var(--n),1fr);gap:calc(var(--w)/var(--n)*.05);margin:8px auto 6px;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.cell{position:relative;border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;font:700 calc(var(--w)/var(--n)*.38) Fredoka,"Trebuchet MS",system-ui,sans-serif;padding:0;cursor:pointer;transition:background .15s}
+.big .cell{font-size:calc(var(--w)/var(--n)*.52)}
+.cell:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.cell.vis{background:var(--path);color:var(--path-ink);border-color:var(--gold)}
+.cell.cur{background:var(--acc);color:var(--acc-ink);border-color:var(--acc);box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 35%,transparent)}
+.cell.start{border-width:3px;border-color:var(--ok)}
+.cell.end{border-width:3px;border-color:var(--gold)}
+.cell::before{position:absolute;top:1px;left:4px;font-size:.42em;line-height:1.2}
+.start::before{content:"▶";color:var(--ok)}
+.end::before{content:"★";color:var(--gold)}
+.cell.cur.start::before{color:var(--acc-ink)}
+.cell.bad{animation:sh .4s;background:color-mix(in srgb,var(--bad) 28%,var(--card));border-color:var(--bad)}
+.cell.hint,.cell.sol{outline:4px solid var(--ok);outline-offset:-3px}
+@keyframes sh{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.msg{min-height:3em;font-weight:500;font-size:1.05rem;line-height:1.35;margin:4px auto;max-width:46ch}
+.big .msg{font-size:1.3rem}
+.msg.ok{color:var(--ok)}
+.msg.bad{color:var(--bad)}
+#cheat{margin:6px auto;max-width:48ch;background:var(--card);border:2px solid var(--line);border-radius:10px;padding:8px 12px;line-height:1.7;word-spacing:.2em}
+#cheat[hidden]{display:none}
+details{margin:8px auto 0;max-width:48ch;background:var(--card);border:2px solid var(--line);border-radius:10px;padding:6px 12px}
+summary{cursor:pointer;font-weight:700}
+.ov{position:fixed;inset:0;background:rgba(10,15,40,.6);display:flex;padding:16px;z-index:20;overflow:auto}
+.ov[hidden]{display:none}
+.ov div{background:var(--card);border:3px solid var(--ink);border-radius:16px;padding:20px 24px;max-width:360px;width:100%;margin:auto}
+.ov h2{margin:0 0 4px;font-size:1.6rem}
+#stars{font-size:2.5rem;color:var(--gold);letter-spacing:.1em;line-height:1.2}
+#res{margin:4px 0}
+#route{color:var(--mute);font-size:.85rem;margin:0 0 12px;overflow-wrap:anywhere}
+.ov .act{margin:4px}
+.ov .main{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)}
+.cf{position:fixed;top:-30px;z-index:30;pointer-events:none;font-style:normal;animation:fall 2s linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(360deg)}}
+@media (max-width:480px){main{padding:8px 6px 20px}h1{font-size:1.5rem}.intro{font-size:.88rem;margin-bottom:4px}.row{gap:6px;margin:4px 0}.row span{min-width:0;padding:3px 8px}}
+@media (min-width:768px){.act{font-size:1.05rem}.msg{font-size:1.2rem}}
+@media (orientation:landscape) and (min-width:760px){main{max-width:1100px;display:grid;grid-template-columns:auto 1fr;column-gap:20px;align-items:start}main>*{grid-column:2}main>.board{grid-column:1;grid-row:1/span 12;position:sticky;top:8px;--w:min(92vh,58vw,760px);margin:8px 0}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<main>
+<h1>Laberinto de primos</h1>
+<p class="intro">Ve de la salida ▶ a la meta ★ pisando solo números primos. Toca una casilla vecina, desliza el dedo o usa las flechas.</p>
+<div class="row">
+<select id="lvs" aria-label="Nivel"></select>
+<select id="mode" aria-label="Modo"><option value="0">Normal</option><option value="1">Reto con vidas</option><option value="2">Contrarreloj</option></select>
+</div>
+<div class="row"><span id="time">⏱ 0:00</span><span id="errs"></span></div>
+<div class="board" id="board" role="grid" aria-label="Laberinto de números"></div>
+<div class="msg" id="msg" role="status" aria-live="polite"></div>
+<div class="row">
+<button class="act" id="hint"></button>
+<button class="act" id="help">📋 Ver primos</button>
+<button class="act" id="reset">Empezar de nuevo</button>
+<button class="act" id="fresh">Otro laberinto</button>
+</div>
+<div id="cheat" hidden></div>
+<div class="row">
+<button class="act" id="snd" aria-label="Sonido">🔊</button>
+<button class="act" id="th"></button>
+<button class="act" id="bigb" aria-label="Letra grande">Aa</button>
+</div>
+<details><summary>Modo profe</summary>
+<div class="row"><label>Tamaño <input type="number" id="pn" min="4" max="10" value="6"></label>
+<label>Números hasta <input type="number" id="pm" min="20" max="300" value="60"></label>
+<button class="act" id="pgo">Jugar</button></div>
+</details>
+</main>
+<div class="ov" id="ov" hidden>
+<div>
+<h2 id="ot"></h2>
+<div id="stars"></div>
+<p id="res"></p>
+<p id="route"></p>
+<button class="act main" id="next">Siguiente nivel</button>
+<button class="act" id="again">Otro laberinto</button>
+<button class="act" id="look">Ver el camino</button>
+</div>
+</div>
+<script>
+const LV=[{n:5,max:30,ln:.4,bi:.5,tr:.3,dc:.15},{n:6,max:60,ln:.38,bi:.4,tr:.5,dc:.2},{n:7,max:100,ln:.38,bi:.3,tr:.6,dc:.25},{n:8,max:150,ln:.4,bi:.2,tr:.7,dc:.3},{n:9,max:200,ln:.42,bi:.1,tr:.8,dc:.35},{n:6,max:60,ln:.38,bi:.4,tr:.5,dc:.2}];
+const isP=x=>{if(x<2)return false;for(let d=2;d*d<=x;d++)if(x%d===0)return false;return true};
+const SC=[262,294,330,392,440,523,587,659,784,880];
+const $=id=>document.getElementById(id),bd=$('board'),R=a=>a[Math.floor(Math.random()*a.length)];
+const fmt=s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+let S={bs:{},bt:{},snd:1,th:0,big:0};
+try{Object.assign(S,JSON.parse(localStorage.getItem('lp2')||'{}'))}catch(e){}
+const sv=()=>{try{localStorage.setItem('lp2',JSON.stringify(S))}catch(e){}};
+let lv=0,mode=0,g=[],sol=[],path=[],errs=0,hints=0,lives=3,streak=0,bad=new Set(),lim=0,el=0,t0=0,timer=null,done=false,ac=null;
+
+function tn(f,d=.15,ty='sine',at=0){
+  if(!S.snd)return;
+  try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();
+    const t=ac.currentTime+at,o=ac.createOscillator(),k=ac.createGain();
+    o.type=ty;o.frequency.value=f;k.gain.setValueAtTime(.06,t);k.gain.exponentialRampToValueAtTime(.001,t+d);
+    o.connect(k);k.connect(ac.destination);o.start(t);o.stop(t+d);}catch(e){}
+}
+function conf(){
+  if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+  for(let i=0;i<36;i++){const s=document.createElement('i');s.className='cf';s.textContent=R(['⭐','🎉','🔷','✨']);
+    s.style.cssText='left:'+Math.random()*100+'vw;animation-delay:'+Math.random()*.6+'s;font-size:'+(16+Math.random()*16)+'px';
+    document.body.appendChild(s);setTimeout(()=>s.remove(),2800)}
+}
+
+/* Camino sin roces: ninguna casilla del camino toca a otra que no sea su vecina en el camino */
+function mkPath(n,bi,minL){
+  const maxL=Math.round(n*n*.7);
+  const nbs=(r,c)=>[[1,0],[-1,0],[0,1],[0,-1]].map(([x,y])=>[r+x,c+y]).filter(([a,b])=>a>=0&&b>=0&&a<n&&b<n);
+  for(let t=0;t<40;t++){
+    const p=[[0,0]],on=new Set([0]);let steps=0;
+    const dfs=(r,c)=>{
+      if(++steps>3000)return false;
+      if(r===n-1&&c===n-1)return p.length>=minL&&p.length<=maxL;
+      const nb=nbs(r,c).filter(([a,b])=>!on.has(a*n+b)&&nbs(a,b).filter(([x,y])=>on.has(x*n+y)).length===1);
+      nb.sort(()=>Math.random()-.5);
+      if(Math.random()<bi)nb.sort((x,y)=>(x[0]+x[1])-(y[0]+y[1])).reverse();
+      for(const [a,b] of nb){on.add(a*n+b);p.push([a,b]);if(dfs(a,b))return true;p.pop();on.delete(a*n+b)}
+      return false;
+    };
+    if(dfs(0,0))return p;
+  }
+  return null;
+}
+function gen(){
+  const {n,max,ln,bi,tr,dc}=LV[lv],G=[],B=[],CO=[],TR=[];
+  for(let i=1;i<=max;i++){if(isP(i))G.push(i);else{B.push(i);if(i%2&&i>1){CO.push(i);if(i%3&&i%5)TR.push(i)}}}
+  sol=mkPath(n,bi,Math.max(2*n-1,Math.round(n*n*ln)))||[...Array(n)].map((_,i)=>[0,i]).concat([...Array(n-1)].map((_,i)=>[i+1,n-1]));
+  const on=new Set(sol.map(([r,c])=>r*n+c)),rest=[];
+  g=Array.from({length:n},()=>Array(n).fill(0));
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++){if(on.has(r*n+c))g[r][c]=R(G);else rest.push([r,c])}
+  rest.sort(()=>Math.random()-.5);
+  const pr=(a,b)=>a>=0&&b>=0&&a<n&&b<n&&g[a][b]>0&&isP(g[a][b]);
+  /* Primos señuelo: solo callejones sin salida, así la solución es única */
+  rest.forEach(([r,c])=>{
+    const k=[[1,0],[-1,0],[0,1],[0,-1]].filter(([x,y])=>pr(r+x,c+y)).length;
+    g[r][c]=k<=1&&Math.random()<dc?R(G):(TR.length&&Math.random()<tr?R(TR):(Math.random()<.7?R(CO):R(B)));
+  });
+}
+
+function why(v){
+  if(v===1)return '1 no es primo: solo tiene un divisor, él mismo.';
+  for(let d=2;d*d<=v;d++)if(v%d===0)return v+' no es primo: '+v+' = '+d+' × '+(v/d)+'.';
+  return '';
+}
+function say(t,cls){const m=$('msg');m.textContent=t;m.className='msg '+(cls||'')}
+function cell(r,c){return bd.children[r*LV[lv].n+c]}
+function stats(){
+  $('errs').textContent=mode===1?'❤️'.repeat(lives)+'🖤'.repeat(3-lives):'✗ '+errs+(errs===1?' error':' errores');
+  $('hint').textContent='💡 Pista ('+(3-hints)+')';
+}
+function tick(){
+  el=Math.floor((Date.now()-t0)/1000);
+  $('time').textContent='⏱ '+fmt(mode===2?Math.max(0,lim-el):el);
+  if(mode===2&&!done&&el>=lim)lose('¡Se acabó el tiempo! Este era el camino.');
+}
+function draw(){
+  const n=LV[lv].n;
+  bd.style.setProperty('--n',n);bd.innerHTML='';
+  g.forEach((row,r)=>row.forEach((v,c)=>{
+    const b=document.createElement('button');
+    b.dataset.k=(r===0&&c===0?' start':'')+(r===n-1&&c===n-1?' end':'');
+    b.textContent=v;b.onclick=()=>{if(sw){sw=false;return}step(r,c)};bd.appendChild(b);
+  }));
+  mark();
+}
+function mark(){
+  [...bd.children].forEach(b=>b.className='cell'+b.dataset.k);
+  path.forEach(([r,c],i)=>cell(r,c).classList.add(i===path.length-1?'cur':'vis'));
+}
+
+function step(r,c){
+  if(done)return;
+  const n=LV[lv].n,[pr,pc]=path[path.length-1];
+  if(path.length>1){const [br,bc]=path[path.length-2];
+    if(br===r&&bc===c){path.pop();tn(220,.1);mark();say('Has vuelto un paso atrás.');return}}
+  if(Math.abs(pr-r)+Math.abs(pc-c)!==1){say('Solo puedes ir a una casilla vecina: arriba, abajo, izquierda o derecha.');return}
+  if(path.some(([a,b])=>a===r&&b===c)){say('Ya has pasado por esa casilla.');return}
+  const v=g[r][c],b=cell(r,c),k=r*n+c;
+  if(!isP(v)){
+    errs++;streak=0;
+    if(mode===1&&!bad.has(k)){bad.add(k);lives--}
+    stats();b.classList.add('bad');setTimeout(()=>b.classList.remove('bad'),500);
+    say(why(v),'bad');tn(150,.3,'triangle');tn(110,.3,'triangle',.12);
+    if(navigator.vibrate)navigator.vibrate(120);
+    if(mode===1&&lives<=0)lose('Te quedaste sin vidas. Este era el camino.');
+    return;
+  }
+  path.push([r,c]);streak++;mark();tn(SC[(path.length-2)%SC.length]);
+  let t=v+' es primo. ¡Sigue!';
+  if(mode===1&&streak%10===0&&lives<3){lives++;stats();t+=' ¡Vida extra!'}
+  say(t,'ok');
+  if(r===n-1&&c===n-1)win();
+}
+
+function hint(){
+  if(done)return;
+  if(hints>=3){say('Ya usaste las 3 pistas.');return}
+  const n=LV[lv].n,s=path[path.length-1],key=([r,c])=>r*n+c;
+  const vis=new Set(path.map(key)),par={[key(s)]:-1},q=[s];let found=null;
+  while(q.length&&found===null){
+    const [r,c]=q.shift();
+    for(const [x,y] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const a=r+x,b=c+y,k=a*n+b;
+      if(a<0||b<0||a>=n||b>=n||par[k]!==undefined||vis.has(k)||!isP(g[a][b]))continue;
+      par[k]=r*n+c;
+      if(a===n-1&&b===n-1){found=k;break}
+      q.push([a,b]);
+    }
+  }
+  if(found===null){say('Desde aquí no hay salida: vuelve un paso atrás.');return}
+  let k=found;while(par[k]!==key(s))k=par[k];
+  hints++;stats();
+  const h=cell(Math.floor(k/n),k%n);h.classList.add('hint');setTimeout(()=>h.classList.remove('hint'),1800);
+  say('La siguiente casilla correcta está marcada en verde.');
+}
+
+function win(){
+  done=true;clearInterval(timer);tick();
+  const e=errs+hints,s=e<=1?3:e<=4?2:1;
+  if(lv<5){S.bs[lv]=Math.max(S.bs[lv]||0,s);S.bt[lv]=Math.min(S.bt[lv]||1e9,el);sv()}
+  $('ot').textContent='¡Lo conseguiste!';$('stars').textContent='★'.repeat(s)+'☆'.repeat(3-s);
+  $('res').textContent='Tiempo '+fmt(el)+', '+errs+(errs===1?' error':' errores')+(lv<5?'. Mejor tiempo: '+fmt(S.bt[lv]):'');
+  $('route').textContent='Tu camino: '+path.map(([r,c])=>g[r][c]).join(', ')+'. Recuerda: el 2 es el único primo par.';
+  $('next').hidden=lv>=4;$('look').hidden=true;
+  stats();renderLv();
+  [523,659,784,1047].forEach((f,i)=>tn(f,.3,'sine',i*.13));conf();
+  $('ov').hidden=false;say('¡Meta alcanzada!','ok');
+}
+function lose(t){
+  done=true;clearInterval(timer);
+  sol.forEach(([r,c])=>cell(r,c).classList.add('sol'));
+  tn(220,.3,'triangle');tn(165,.4,'triangle',.2);
+  say(t,'bad');$('ot').textContent='¡Casi!';$('stars').textContent='';
+  $('res').textContent=t;$('route').textContent='';$('next').hidden=true;$('look').hidden=false;$('ov').hidden=false;
+}
+
+function renderLv(){
+  $('lvs').innerHTML=LV.map((L,i)=>{
+    const lk=i>0&&i<5&&!S.bs[i-1];
+    return '<option value="'+i+'"'+(lk?' disabled':'')+(i===lv?' selected':'')+'>'+(lk?'🔒 ':'')+(i<5?'Nivel '+(i+1):'Libre')+' (hasta '+L.max+')'+(i<5&&S.bs[i]?' '+'★'.repeat(S.bs[i]):'')+'</option>';
+  }).join('');
+}
+
+function newGame(regen=true){
+  mode=+$('mode').value;
+  if(lv>0&&lv<5&&!S.bs[lv-1])lv=0;
+  if(regen)gen();
+  const n=LV[lv].n;lim=n*12;
+  path=[[0,0]];errs=0;hints=0;lives=3;streak=0;bad=new Set();done=false;
+  t0=Date.now();clearInterval(timer);timer=setInterval(tick,1000);
+  $('ov').hidden=true;
+  const ns=[];for(let i=2;i<=LV[lv].max;i++)if(isP(i))ns.push(i);
+  $('cheat').textContent=ns.join('  ')+'   (el 1 no es primo)';
+  draw();stats();tick();renderLv();
+  say(mode===1?'Tienes 3 vidas. Toca una casilla vecina.':mode===2?'Tienes '+fmt(lim)+' para llegar a la meta.':'Toca una casilla vecina que tenga un número primo.');
+}
+function theme(){
+  const t=[['','🌓 Auto'],['light','☀️ Claro'],['dark','🌙 Oscuro']][S.th],d=document.documentElement;
+  t[0]?d.dataset.theme=t[0]:delete d.dataset.theme;$('th').textContent=t[1];
+  $('snd').textContent=S.snd?'🔊':'🔇';document.body.classList.toggle('big',!!S.big);
+}
+
+$('mode').onchange=()=>newGame();
+$('lvs').onchange=e=>{lv=+e.target.value;newGame()};
+$('hint').onclick=hint;
+$('help').onclick=()=>{$('cheat').hidden=!$('cheat').hidden};
+$('reset').onclick=()=>newGame(false);
+$('fresh').onclick=()=>newGame();
+$('again').onclick=()=>newGame();
+$('next').onclick=()=>{if(lv<4){lv++;newGame()}};
+$('look').onclick=()=>{$('ov').hidden=true};
+$('snd').onclick=()=>{S.snd=S.snd?0:1;theme();sv()};
+$('th').onclick=()=>{S.th=(S.th+1)%3;theme();sv()};
+$('bigb').onclick=()=>{S.big=S.big?0:1;theme();sv()};
+$('pgo').onclick=()=>{
+  const n=Math.min(10,Math.max(4,+$('pn').value||6)),m=Math.min(300,Math.max(20,+$('pm').value||60));
+  LV[5]={n,max:m,ln:.38,bi:.3,tr:.6,dc:.25};lv=5;newGame();
+};
+document.addEventListener('keydown',e=>{
+  const d={ArrowUp:[-1,0],ArrowDown:[1,0],ArrowLeft:[0,-1],ArrowRight:[0,1]}[e.key];
+  if(!d||done||e.target.matches('input,select'))return;
+  e.preventDefault();
+  move(d);
+});
+function move(d){
+  const n=LV[lv].n,[r,c]=path[path.length-1],a=r+d[0],b=c+d[1];
+  if(a>=0&&b>=0&&a<n&&b<n)step(a,b);
+}
+let sx=0,sy=0,sw=false;
+bd.addEventListener('pointerdown',e=>{sx=e.clientX;sy=e.clientY;sw=false});
+bd.addEventListener('pointerup',e=>{
+  const dx=e.clientX-sx,dy=e.clientY-sy;
+  if(!done&&Math.max(Math.abs(dx),Math.abs(dy))>30){sw=true;move(Math.abs(dx)>Math.abs(dy)?[0,dx>0?1:-1]:[dy>0?1:-1,0])}
+});
+theme();newGame();
+</script>
+</body>
+</html>
